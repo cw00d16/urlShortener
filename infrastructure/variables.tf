@@ -46,6 +46,6 @@ variable "dynamodb_billing_mode" {
 }
 
 locals {
-  prefix       = "${var.project_name}-${var.environment}"
+  prefix       = "urlshortener-${var.environment}"
   use_custom_domain = var.domain_name != ""
 }

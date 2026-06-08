@@ -8,7 +8,7 @@ resource "aws_apigatewayv2_api" "main" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins  = ["https://${aws_cloudfront_distribution.frontend.domain_name}"]
+    allow_origins  = ["*"]
     allow_methods  = ["GET", "POST", "DELETE", "OPTIONS"]
     allow_headers  = ["Content-Type", "Authorization"]
     expose_headers = ["Location"]
@@ -23,6 +23,7 @@ resource "aws_apigatewayv2_stage" "main" {
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
+    format = "$context.requestId $context.status"
   }
 
   default_route_settings {

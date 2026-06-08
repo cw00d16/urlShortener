@@ -151,8 +151,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     ssl_support_method             = local.use_custom_domain ? "sni-only" : null
     minimum_protocol_version       = local.use_custom_domain ? "TLSv1.2_2021" : null
   }
-
-  depends_on = [aws_s3_bucket_policy.frontend]
 }
 
 # Optional: ACM cert for custom domain (must be in us-east-1)
