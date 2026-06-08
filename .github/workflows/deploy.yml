@@ -37,7 +37,7 @@ jobs:
           zip -r ../../shorten.zip .
           cd ../..
           aws lambda update-function-code \
-            --function-name url-shortener-prod-shorten \
+            --function-name urlshortener-prod-shorten \
             --zip-file fileb://shorten.zip
 
       - name: Zip and deploy redirect Lambda
@@ -46,7 +46,7 @@ jobs:
           zip -r ../../redirect.zip .
           cd ../..
           aws lambda update-function-code \
-            --function-name url-shortener-prod-redirect \
+            --function-name urlshortener-prod-redirect \
             --zip-file fileb://redirect.zip
 
       - name: Zip and deploy list-urls Lambda
@@ -55,7 +55,7 @@ jobs:
           zip -r ../../urls.zip .
           cd ../..
           aws lambda update-function-code \
-            --function-name url-shortener-prod-list-urls \
+            --function-name urlshortener-prod-list-urls \
             --zip-file fileb://urls.zip
 
   # ---------------------------------------------------------------
