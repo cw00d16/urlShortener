@@ -105,30 +105,18 @@ body {
   text-transform: uppercase; letter-spacing: 1px;
   width: 36px; flex-shrink: 0; text-align: right;
 }
-.main-input, .slug-input {
+.main-input {
   flex: 1; background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 11px 14px;
   font-family: var(--sans); font-size: 14px; color: var(--text);
   outline: none; transition: border-color 0.15s;
 }
-.main-input:focus, .slug-input:focus { border-color: var(--accent); }
-.main-input::placeholder, .slug-input::placeholder { color: var(--text-3); }
+.main-input:focus { border-color: var(--accent); }
+.main-input::placeholder { color: var(--text-3); }
 
-.slug-group { gap: 0; }
-.slug-prefix {
-  font-family: var(--mono); font-size: 12px; color: var(--text-3);
-  white-space: nowrap; background: var(--surface-2);
-  border: 1px solid var(--border); border-right: none;
-  border-radius: var(--radius) 0 0 var(--radius);
-  padding: 11px 12px; height: 42px; display: flex; align-items: center;
-  margin-left: 46px;
-}
-.slug-input {
-  border-radius: 0; border-right: none; margin: 0;
-}
 .shorten-btn {
   background: var(--accent); color: #000; border: none;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
   padding: 0 22px; height: 42px; white-space: nowrap;
   font-family: var(--sans); font-size: 14px; font-weight: 500;
   cursor: pointer; transition: background 0.15s; flex-shrink: 0;
@@ -249,8 +237,6 @@ body {
 .confirm-hint { font-size: 14px; color: var(--text-2); margin-bottom: 20px; margin-top: -12px; }
 
 @media (max-width: 600px) {
-  .slug-prefix { display: none; }
-  .slug-input { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
   .input-label { display: none; }
   .link-long { max-width: 200px; }
   .hero h1 { font-size: 36px; }

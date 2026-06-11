@@ -17,7 +17,7 @@ async function request(method, path, body, getToken) {
 }
 
 export const api = {
-  shorten:    (longUrl, customSlug, getToken) =>
+  shorten:    (longUrl, getToken) =>
     request("POST", "/api/shorten", { longUrl, customSlug }, getToken),
 
   listUrls:   (getToken) =>

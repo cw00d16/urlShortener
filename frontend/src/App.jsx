@@ -19,7 +19,7 @@ function CopyButton({ text }) {
 
 function Dashboard({ auth }) {
   const [longUrl, setLongUrl]     = useState("");
-  const [slug, setSlug]           = useState("");
+
   const [result, setResult]       = useState(null);
   const [urls, setUrls]           = useState([]);
   const [error, setError]         = useState("");
@@ -48,10 +48,9 @@ function Dashboard({ auth }) {
 
     setSubmitting(true);
     try {
-      const data = await api.shorten(longUrl, slug || undefined, auth.getToken);
+      const data = await api.shorten(longUrl, auth.getToken);
       setResult(data);
       setLongUrl("");
-      setSlug("");
       load();
     } catch (e) {
       setError(e.message);
@@ -86,18 +85,6 @@ function Dashboard({ auth }) {
               value={longUrl}
               onChange={e => setLongUrl(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleShorten()}
-            />
-          </div>
-          <div className="input-group slug-group">
-            <span className="input-label slug-prefix">
-              {shortBase}/r/
-            </span>
-            <input
-              className="slug-input"
-              type="text"
-              placeholder="custom-slug (optional)"
-              value={slug}
-              onChange={e => setSlug(e.target.value.replace(/[^a-zA-Z0-9-_]/g, ""))}
             />
             <button
               className="shorten-btn"
