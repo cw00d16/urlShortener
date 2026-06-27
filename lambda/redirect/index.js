@@ -47,13 +47,13 @@ exports.handler = async (event) => {
     }),
   }).catch(err => console.error("QStash publish failed:", err));
 
-  // 301 — permanent redirect, cached by CloudFront and browsers.
-  // Clicks are tracked async via QStash so we don't need the request to hit Lambda again.
+  // 302 — temporary redirect
+  // Clicks are tracked async via QStash.
   return {
-    statusCode: 301,
+    statusCode: 302,
     headers: {
       Location: result.Item.longUrl,
-      "Cache-Control": "public, max-age=3600", // cache for 1 hour in CloudFront + browsers
+      "Cache-Control": "no-cache",
     },
     body: "",
   };

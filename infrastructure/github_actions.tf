@@ -94,7 +94,8 @@ resource "aws_iam_role_policy" "github_lambda" {
       Resource = [
         aws_lambda_function.shorten.arn,
         aws_lambda_function.redirect.arn,
-        aws_lambda_function.list_urls.arn
+        aws_lambda_function.list_urls.arn,
+        aws_lambda_function.analytics.arn
       ]
     }]
   })
