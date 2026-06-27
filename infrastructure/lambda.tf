@@ -86,8 +86,58 @@ data "archive_file" "list_urls" {
 locals {
   lambda_environment = {
     TABLE_NAME  = aws_dynamodb_table.urls.name
-    AWS_REGION_ = var.aws_region # avoid overriding reserved AWS_REGION
+    AWS_REGION_ = var.aws_region
   }
+
+  redirect_environment = merge(local.lambda_environment, {
+    QSTASH_URL    = "https://qstash-us-east-1.upstash.io/v2/publish/"
+    QSTASH_TOKEN  = var.qstash_token
+    ANALYTICS_URL = "${aws_apigatewayv2_api.main.api_endpoint}/${var.environment}/internal/analytics"
+  })
+
+  analytics_environment = merge(local.lambda_environment, {
+    QSTASH_SIGNING_KEY      = var.qstash_signing_key
+    QSTASH_NEXT_SIGNING_KEY = var.qstash_next_signing_key
+  })
+}
+
+# --- analytics Lambda archive ---
+data "archive_file" "analytics" {
+  type        = "zip"
+  source_dir  = "${path.module}/../lambda/analytics"
+  output_path = "${path.module}/.lambda_builds/analytics.zip"
+}
+
+# CloudWatch log group for analytics
+resource "aws_cloudwatch_log_group" "analytics" {
+  name              = "/aws/lambda/${local.prefix}-analytics"
+  retention_in_days = 14
+}
+
+# --- analytics Lambda ---
+resource "aws_lambda_function" "analytics" {
+  function_name    = "${local.prefix}-analytics"
+  role             = aws_iam_role.lambda.arn
+  runtime          = "nodejs20.x"
+  handler          = "index.handler"
+  filename         = data.archive_file.analytics.output_path
+  source_code_hash = data.archive_file.analytics.output_base64sha256
+  memory_size      = var.lambda_memory_mb
+  timeout          = var.lambda_timeout_seconds
+
+  environment {
+    variables = local.analytics_environment
+  }
+
+  depends_on = [aws_cloudwatch_log_group.analytics]
+}
+
+resource "aws_lambda_permission" "analytics" {
+  statement_id  = "AllowAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.analytics.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
 # --- shorten Lambda ---
@@ -128,7 +178,7 @@ resource "aws_lambda_function" "redirect" {
   timeout          = var.lambda_timeout_seconds
 
   environment {
-    variables = local.lambda_environment
+    variables = local.redirect_environment
   }
 
   depends_on = [aws_cloudwatch_log_group.redirect]

@@ -102,6 +102,21 @@ resource "aws_apigatewayv2_route" "redirect" {
   target    = "integrations/${aws_apigatewayv2_integration.redirect.id}"
 }
 
+# POST /internal/analytics — called by QStash only (no Cognito auth, verified by QStash signature in Lambda)
+resource "aws_apigatewayv2_integration" "analytics" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.analytics.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "analytics" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /internal/analytics"
+  target    = "integrations/${aws_apigatewayv2_integration.analytics.id}"
+  # No Cognito auth — QStash signature verification happens inside the Lambda
+}
+
 # CloudWatch log group for API Gateway access logs
 resource "aws_cloudwatch_log_group" "api_gateway" {
   name              = "/aws/apigateway/${local.prefix}"

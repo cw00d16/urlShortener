@@ -58,6 +58,15 @@ jobs:
             --function-name urlshortener-prod-list-urls \
             --zip-file fileb://urls.zip
 
+      - name: Zip and deploy analytics Lambda
+        run: |
+          cd lambda/analytics
+          zip -r ../../analytics.zip .
+          cd ../..
+          aws lambda update-function-code \
+            --function-name urlshortener-prod-analytics \
+            --zip-file fileb://analytics.zip
+
   # ---------------------------------------------------------------
   # Build and deploy React frontend
   # ---------------------------------------------------------------

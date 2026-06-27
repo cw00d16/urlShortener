@@ -1,9 +1,12 @@
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBDocumentClient, GetCommand } = require("@aws-sdk/lib-dynamodb");
 
 const client = new DynamoDBClient({});
 const db = DynamoDBDocumentClient.from(client);
 const TABLE = process.env.TABLE_NAME;
+const QSTASH_URL = process.env.QSTASH_URL;       // e.g. https://qstash.upstash.io/v2/publish/...
+const QSTASH_TOKEN = process.env.QSTASH_TOKEN;
+const ANALYTICS_URL = process.env.ANALYTICS_URL; // full URL of your /internal/analytics endpoint
 
 exports.handler = async (event) => {
   const shortCode = event.pathParameters?.code;
@@ -14,7 +17,6 @@ exports.handler = async (event) => {
   const result = await db.send(new GetCommand({
     TableName: TABLE,
     Key: { shortCode },
-    // Only fetch what we need — cheaper and faster
     ProjectionExpression: "longUrl",
   }));
 
@@ -26,21 +28,32 @@ exports.handler = async (event) => {
     };
   }
 
-  // Increment click count asynchronously — don't await so redirect is instant
-  db.send(new UpdateCommand({
-    TableName: TABLE,
-    Key: { shortCode },
-    UpdateExpression: "SET clickCount = if_not_exists(clickCount, :zero) + :one",
-    ExpressionAttributeValues: { ":zero": 0, ":one": 1 },
-  })).catch(err => console.error("Click count update failed:", err));
+  // Fire-and-forget: publish a click event to QStash.
+  // QStash will call our analytics Lambda asynchronously.
+  // We do NOT await this — the 301 goes back immediately.
+  fetch(`${QSTASH_URL}${ANALYTICS_URL}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${QSTASH_TOKEN}`,
+      "Content-Type": "application/json",
+      // Retry up to 3 times if the analytics Lambda fails
+      "Upstash-Retries": "3",
+    },
+    body: JSON.stringify({
+      shortCode,
+      timestamp: new Date().toISOString(),
+      userAgent: event.headers?.["user-agent"] || "",
+      referer: event.headers?.referer || "",
+    }),
+  }).catch(err => console.error("QStash publish failed:", err));
 
-  // 302 = temporary redirect (browser won't cache it — good for click tracking)
-  // Use 301 only if you want browsers/CDN to cache the redirect permanently
+  // 301 — permanent redirect, cached by CloudFront and browsers.
+  // Clicks are tracked async via QStash so we don't need the request to hit Lambda again.
   return {
-    statusCode: 302,
+    statusCode: 301,
     headers: {
       Location: result.Item.longUrl,
-      "Cache-Control": "no-cache", // prevent browser caching so clicks always hit Lambda
+      "Cache-Control": "public, max-age=3600", // cache for 1 hour in CloudFront + browsers
     },
     body: "",
   };
