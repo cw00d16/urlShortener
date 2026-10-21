@@ -135,14 +135,14 @@ function Dashboard({ auth }) {
                 <div className="link-top">
                   <a
                     className="link-short"
-                    href={`${shortBase}/r/${u.shortCode}`}
+                    href={`${shortBase}/${u.shortCode}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    /r/{u.shortCode}
+                    /{u.shortCode}
                   </a>
                   <span className="link-clicks">{u.clickCount ?? 0} clicks</span>
-                  <CopyButton text={`${shortBase}/r/${u.shortCode}`} />
+                  <CopyButton text={`${shortBase}/${u.shortCode}`} />
                   <button
                     className="delete-btn"
                     onClick={() => handleDelete(u.shortCode)}
