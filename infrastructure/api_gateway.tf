@@ -88,7 +88,7 @@ resource "aws_apigatewayv2_route" "delete_url" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
-# GET /r/{code} — public redirect (no auth)
+# GET /{code} — public redirect (no auth)
 resource "aws_apigatewayv2_integration" "redirect" {
   api_id                 = aws_apigatewayv2_api.main.id
   integration_type       = "AWS_PROXY"
@@ -98,7 +98,7 @@ resource "aws_apigatewayv2_integration" "redirect" {
 
 resource "aws_apigatewayv2_route" "redirect" {
   api_id    = aws_apigatewayv2_api.main.id
-  route_key = "GET /r/{code}"
+  route_key = "GET /{code}"
   target    = "integrations/${aws_apigatewayv2_integration.redirect.id}"
 }
 

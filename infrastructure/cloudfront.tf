@@ -113,9 +113,13 @@ resource "aws_cloudfront_distribution" "frontend" {
     compress               = true
   }
 
-  # /r/* — short URL redirects, route to API Gateway
+  # Short URL redirects live at the bare root path, e.g. /aZ3kq1X.
+  # Codes are always exactly 7 Base62 characters, so "?" (matches
+  # exactly 1 character) pins this behavior to that length — it
+  # won't catch longer static asset paths like /static/js/main.js
+  # or root files like /favicon.ico, /manifest.json, /robots.txt.
   ordered_cache_behavior {
-    path_pattern           = "/r/*"
+    path_pattern           = "/???????"
     target_origin_id       = local.api_origin_id
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD"]

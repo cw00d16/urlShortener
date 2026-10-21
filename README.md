@@ -15,15 +15,15 @@ React (S3 + CloudFront) ── Cognito (auth)
 - **Frontend**: React SPA on S3, served through CloudFront (OAC, no public bucket).
 - **Auth**: Cognito User Pool, JWT access token as a Bearer header on the HTTP API.
 - **Shortening/lookup**: HTTP API + Lambda (`shorten`, `urls`, `redirect`) backed by a single DynamoDB table (`urls`), with a GSI for "list my links" queries.
-- **Redirects**: public, unauthenticated `GET /r/{code}` — routed through CloudFront so popular links get edge-cached, but with `min_ttl=0` on that cache policy so the origin's `Cache-Control: no-cache` on the redirect response is honored, meaning every click still reaches the Lambda (needed for click tracking — see below).
+- **Redirects**: public, unauthenticated `GET /{code}` at the bare root (no `/r/` prefix, so links are as short as the code itself) — routed through CloudFront, matched by a 7-`?` path pattern so it only catches exactly-7-character paths, so popular links get edge-cached, but with `min_ttl=0` on that cache policy so the origin's `Cache-Control: no-cache` on the redirect response is honored, meaning every click still reaches the Lambda (needed for click tracking — see below).
 - **Click analytics**: decoupled from the redirect path via [QStash](https://upstash.com/docs/qstash) (Upstash's HTTP-based message queue) — `redirect` fires an unawaited request to QStash and returns the 302 immediately; QStash retries delivery to a separate `analytics` Lambda, which verifies QStash's signature and increments the click counter.
 - **CI/CD**: GitHub Actions assumes an AWS role via OIDC, deploys Lambda code and syncs the frontend build to S3 + CloudFront invalidation.
 
 ## Design decisions & tradeoffs
 
-### Short codes: timestamp + random, not a counter
+### Short codes: 7 random Base62 characters, not a sortable ID
 
-`shorten` builds each code from a 41-bit millisecond timestamp and 22 bits of crypto-random, packed into one integer and Base62-encoded (see `lambda/shorten/index.js`). The reasoning in the code comment is that this "keeps DynamoDB write distribution even over time" — worth correcting slightly: DynamoDB hashes the full partition key value to place items, so a monotonically-increasing key doesn't inherently create a hot partition here the way it would in a range-partitioned store. The random suffix is doing something more specific and more important: **guaranteeing uniqueness across concurrent Lambda invocations without any shared coordinator.** Two invocations racing in the same millisecond, in different execution environments, can't both grab "the next counter value" the way a single-threaded counter could — but they almost certainly won't roll the same 22 random bits. That's the real justification for this scheme in a serverless context, and it's a good one; the write-distribution framing just isn't quite the right reason.
+`shorten` generates each code as 7 characters drawn uniformly from the Base62 alphabet (see `lambda/shorten/index.js`) — the same length convention mainstream shorteners like bit.ly and TinyURL use, giving 62^7 ≈ 3.5 trillion possible codes. An earlier version packed a 41-bit timestamp and 22 random bits into one Base62-encoded integer to get sortable, collision-resistant IDs without a shared coordinator across Lambda invocations; that's a reasonable scheme for high write volume, but it forces every code to be 10-11 characters, which is longer than a link-shortening use case needs. The current approach keeps the "no coordinator needed" property — each invocation just draws fresh random bytes — and accepts the (astronomically small, but non-zero) chance of a collision by catching it on the `ConditionExpression` write and retrying with a new code.
 
 ### Redirects are 302, not 301 — on purpose
 
